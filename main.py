@@ -10,7 +10,7 @@ from consultas.vitorias_com_desvantagem import consultar_vitorias_com_desvantage
 from consultas.combos_vencedores_n_cartas import consultar_combos_vencedores
 from consultas.cartas_mais_usadas_derrotas import consultar_cartas_mais_usadas_derrotas
 from consultas.vitorias_rapidas import consultar_vitorias_rapidas
-from consultas.carta_carregadora import consultar_carta_carregadora  # EXTRA 3
+from consultas.carta_carregadora import consultar_carta_carregadora
 
 def menu():
     while True:
