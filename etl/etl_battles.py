@@ -58,3 +58,4 @@ def inserir_batalhas():
 # Executa se rodar diretamente
 if __name__ == "__main__":
     inserir_batalhas()
+
