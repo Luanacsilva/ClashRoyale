@@ -1,65 +1,63 @@
 from pymongo import MongoClient
 from dotenv import load_dotenv
 import os
-from datetime import datetime
 
-# Conecta ao Mongo
 load_dotenv()
-MONGODB_URI = os.getenv("MONGODB_URI")
-client = MongoClient(MONGODB_URI)
+
+client = MongoClient(os.getenv("MONGODB_URI"))
 db = client["bd_clashroyale"]
-colecao = db["batalhas"]
+battles = db["battles"]
 
-def formatar_data(data_str, final=False):
-    try:
-        dt = datetime.strptime(data_str, "%d/%m/%y")
-        if final:
-            dt = dt.replace(hour=23, minute=59, second=59)
-        return dt.isoformat()
-    except ValueError:
-        print("❌ Data em formato inválido. Use dd/mm/aa.")
-        return None
+def main():
+    pipeline = [
+        { "$unwind": "$team" },
+        { "$unwind": "$team.cards" },
+        {
+            "$group": {
+                "_id": "$team.cards.name",
+                "total": { "$sum": 1 },
+                "vitorias": {
+                    "$sum": {
+                        "$cond": [
+                            {
+                                "$gt": [
+                                    "$team.crowns",
+                                    { "$max": "$opponent.crowns" }
+                                ]
+                            },
+                            1, 0
+                        ]
+                    }
+                }
+            }
+        },
+        {
+            "$project": {
+                "_id": 0,
+                "carta": "$_id",
+                "total": 1,
+                "vitorias": 1,
+                "taxa_vitorias": {
+                    "$multiply": [
+                        { "$divide": ["$vitorias", "$total"] },
+                        100
+                    ]
+                }
+            }
+        },
+        { "$sort": { "taxa_vitorias": -1 } }
+    ]
 
-def consultar_porcentagem_carta():
-    carta = input("Digite o nome da carta (ex: Giant): ")
+    print("\n📊 TAXA DE VITÓRIA POR CARTA:\n")
+    resultados = list(battles.aggregate(pipeline))
 
-    data_inicio = input("Data de início (dd/mm/aa): ")
-    data_fim = input("Data de fim (dd/mm/aa): ")
+    if not resultados:
+        print("⚠️ Nenhum resultado encontrado.")
+    else:
+        for r in resultados:
+            print(f"{r['carta']}: {r['taxa_vitorias']:.1f}% de vitórias em {r['total']} usos")
 
-    dt_inicio = formatar_data(data_inicio)
-    dt_fim = formatar_data(data_fim, final=True)
+    print("\n✅ Consulta executada com sucesso!\n")
 
-    if not dt_inicio or not dt_fim:
-        return
-
-    partidas = list(colecao.find({
-        "timestamp": {"$gte": dt_inicio, "$lte": dt_fim}
-    }))
-
-    if not partidas:
-        print("⚠️ Nenhuma batalha encontrada no intervalo.")
-        return
-
-    vitorias = 0
-    derrotas = 0
-
-    for p in partidas:
-        if carta in p["deck_1"] or carta in p["deck_2"]:
-            if carta in (p["deck_1"] if p["vencedor"] == p["jogador_1"]["nickname"] else p["deck_2"]):
-                vitorias += 1
-            else:
-                derrotas += 1
-
-    total = vitorias + derrotas
-
-    if total == 0:
-        print(f"⚠️ A carta '{carta}' não apareceu em nenhuma batalha no período.")
-        return
-
-    print(f"📊 Resultados da carta '{carta}':")
-    print(f"🏆 Vitórias: {vitorias} ({vitorias / total * 100:.2f}%)")
-    print(f"💀 Derrotas: {derrotas} ({derrotas / total * 100:.2f}%)")
-
-
-
-
+if __name__ == "__main__":
+    main()

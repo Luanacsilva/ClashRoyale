@@ -1,74 +1,68 @@
 from pymongo import MongoClient
 from dotenv import load_dotenv
-from datetime import datetime
+import os
 from itertools import combinations
 from collections import Counter
-import os
 
-# Conecta ao MongoDB
 load_dotenv()
-MONGODB_URI = os.getenv("MONGODB_URI")
-client = MongoClient(MONGODB_URI)
+client = MongoClient(os.getenv("MONGODB_URI"))
 db = client["bd_clashroyale"]
-colecao = db["batalhas"]
+battles = db["battles"]
 
-def formatar_data(data_str, final=False):
-    try:
-        dt = datetime.strptime(data_str, "%d/%m/%y")
-        if final:
-            dt = dt.replace(hour=23, minute=59, second=59)
-        return dt.isoformat()
-    except ValueError:
-        print("❌ Data inválida. Use o formato dd/mm/aa.")
-        return None
+# Configurações
+N = 3         # Número de cartas no combo
+MIN_TAXA = 70 # Taxa mínima de vitórias em %
 
-def consultar_combos_vencedores():
-    try:
-        n = int(input("Tamanho do combo (N): "))
-        if n < 2 or n > 8:
-            print("❌ O combo deve ter entre 2 e 8 cartas.")
-            return
-        perc_min = float(input("Porcentagem mínima de vitórias (Y): "))
-    except ValueError:
-        print("❌ Valor inválido para combo ou porcentagem.")
-        return
+def main():
+    print("\n🎯 COMBOS DE CARTAS COM MELHOR DESEMPENHO:\n")
 
-    data_inicio = input("Data de início (dd/mm/aa): ")
-    data_fim = input("Data de fim (dd/mm/aa): ")
+    # Pega batalhas com vitória
+    vitorias = battles.find({
+        "$expr": {
+            "$gt": [
+                { "$arrayElemAt": ["$team.crowns", 0] },
+                { "$arrayElemAt": ["$opponent.crowns", 0] }
+            ]
+        }
+    }, { "team.cards.name": 1 })
 
-    dt_inicio = formatar_data(data_inicio)
-    dt_fim = formatar_data(data_fim, final=True)
+    # Pega todas as batalhas
+    todas = battles.find({}, { "team.cards.name": 1 })
 
-    if not dt_inicio or not dt_fim:
-        return
+    # Função para gerar combos
+    def gerar_combos(batalhas):
+        combos = []
+        for b in batalhas:
+            try:
+                cartas = [c["name"] for c in b["team"][0]["cards"]]
+                if len(cartas) >= N:
+                    combos += combinations(sorted(cartas), N)
+            except:
+                pass
+        return combos
 
-    partidas = list(colecao.find({
-        "timestamp": {"$gte": dt_inicio, "$lte": dt_fim}
-    }))
+    # Contagem
+    total_combos = Counter(gerar_combos(todas))
+    vitoria_combos = Counter(gerar_combos(vitorias))
 
-    if not partidas:
-        print("⚠️ Nenhuma batalha encontrada no intervalo.")
-        return
+    # Filtra combos com taxa alta
+    resultados = []
+    for combo, total in total_combos.items():
+        wins = vitoria_combos.get(combo, 0)
+        taxa = (wins / total) * 100
+        if taxa >= MIN_TAXA:
+            resultados.append((combo, wins, total, taxa))
 
-    total_batalhas = 0
-    contador_combos = Counter()
+    # Ordena
+    resultados.sort(key=lambda x: x[3], reverse=True)
 
-    for p in partidas:
-        vencedor = p["vencedor"]
-        deck = p["deck_1"] if vencedor == p["jogador_1"]["nickname"] else p["deck_2"]
-        combos = combinations(sorted(deck), n)
-        for c in combos:
-            contador_combos[c] += 1
-        total_batalhas += 1
+    if not resultados:
+        print("⚠️ Nenhum combo com alta taxa de vitória encontrado.")
+    else:
+        for combo, wins, total, taxa in resultados[:10]:
+            print(f"🔗 Combo: {', '.join(combo)} - {taxa:.1f}% de vitórias ({wins} de {total})")
 
-    print(f"\n📊 Combos de {n} cartas com mais de {perc_min}% de vitórias:\n")
+    print("\n✅ Consulta executada com sucesso!\n")
 
-    encontrou = False
-    for combo, freq in contador_combos.items():
-        perc = (freq / total_batalhas) * 100
-        if perc >= perc_min:
-            encontrou = True
-            print(f"🔥 Combo: {combo} — {freq} vitórias ({perc:.2f}%)")
-
-    if not encontrou:
-        print("😶 Nenhum combo com os critérios foi encontrado.")
+if __name__ == "__main__":
+    main()

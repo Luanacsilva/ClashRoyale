@@ -1,38 +1,54 @@
 from pymongo import MongoClient
 from dotenv import load_dotenv
-from datetime import datetime
 import os
 
-# Conecta ao MongoDB
+# Carregar variáveis de ambiente
 load_dotenv()
-MONGODB_URI = os.getenv("MONGODB_URI")
-client = MongoClient(MONGODB_URI)
+client = MongoClient(os.getenv("MONGODB_URI"))
 db = client["bd_clashroyale"]
-colecao = db["batalhas"]
+battles = db["battles"]
 
-def consultar_vitorias_rapidas():
-    try:
-        tempo_limite = int(input("Mostrar vitórias com duração menor que (segundos): "))
-    except ValueError:
-        print("❌ Valor inválido.")
-        return
+# Tempo limite para considerar uma vitória "rápida" (em segundos)
+LIMITE_SEGUNDOS = 120
 
-    partidas = list(colecao.find({
-        "duracao_segundos": {"$lt": tempo_limite}
-    }))
+def main():
+    print("\n⏰ VITÓRIAS EM TEMPO RECORDE:")
 
-    if not partidas:
-        print("⚠️ Nenhuma batalha rápida encontrada com esse critério.")
-        return
+    # Pipeline para buscar vitórias com menos de LIMITE_SEGUNDOS de duração
+    pipeline = [
+        {"$match": {
+            "$expr": {
+                "$gt": [
+                    { "$arrayElemAt": ["$team.crowns", 0] },
+                    { "$arrayElemAt": ["$opponent.crowns", 0] }
+                ]
+            },
+            "team": { "$exists": True },
+            "opponent": { "$exists": True },
+            "battleTime": { "$exists": True },
+            "duration": { "$exists": True, "$lte": LIMITE_SEGUNDOS }
+        }},
+        {"$project": {
+            "_id": 0,
+            "crowns": "$team.crowns",
+            "opponent_crowns": "$opponent.crowns",
+            "duration": 1
+        }},
+        {"$sort": {"duration": 1}}
+    ]
 
-    print(f"\n⚡ Vitórias com duração menor que {tempo_limite} segundos:\n")
+    resultados = list(battles.aggregate(pipeline))
 
-    for p in partidas:
-        vencedor = p["vencedor"]
-        if vencedor == p["jogador_1"]["nickname"]:
-            oponente = p["jogador_2"]["nickname"]
-        else:
-            oponente = p["jogador_1"]["nickname"]
-        tempo = p["duracao_segundos"]
+    if not resultados:
+        print("\n🚨 Nenhuma vitória rápida encontrada!")
+    else:
+        for r in resultados:
+            duracao = r.get("duration", 0)
+            time_crowns = r.get("crowns", [0])[0]
+            opp_crowns = r.get("opponent_crowns", [0])[0]
+            print(f"🚀 Vitória em {duracao} segundos (Coroas: {time_crowns} x {opp_crowns})")
 
-        print(f"🏆 {vencedor} venceu {oponente} em {tempo} segundos")
+    print("\n🌟 Consulta executada com sucesso!\n")
+
+if __name__ == "__main__":
+    main()
