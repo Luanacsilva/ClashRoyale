@@ -38,31 +38,49 @@ Simular e analisar estatísticas de partidas Clash Royale com:
 ### 🧱 Estrutura de Pastas
 
 ```bash
-clash_royale_mongo/
+ClashRoyale/
 │
-├── api/                      # Scripts para coleta de dados da API e simulações
-│   ├── coletar_cartas.py
-│   └── coletar_batalhas.py
+├── api/                          # Scripts para chamada direta da API oficial
+│   ├── coletar_batalhas.py
+│   └── coletar_cartas.py
 │
-├── db/                       # Conexão com banco e inserção de dados
-│   ├── conexao.py
-│   ├── inserir_cartas.py
-│   └── inserir_batalhas.py
-│
-├── consultas/                # Todas as consultas analíticas do projeto
-│   ├── porcentagem_carta.py
-│   ├── decks_vencedores.py
-│   ├── combos_derrota.py
-│   ├── vitorias_com_desvantagem.py
-│   ├── combos_vencedores_n_cartas.py
+├── consultas/                    # Consultas analíticas com base nos dados reais
 │   ├── cartas_mais_usadas_derrotas.py
-│   ├── vitorias_rapidas.py
-│   └── carta_carregadora.py
+│   ├── combos_derrota.py
+│   ├── combos_vencedores_n_cartas.py
+│   ├── decks_vitoriosos.py
+│   ├── porcentagem_carta.py
+│   ├── teste_desvantagem.py
+│   ├── teste_trofeus.py
+│   ├── vitorias_com_desvantagem.py
+│   └── vitorias_rapidas.py
 │
-├── main.py                   # Menu principal para executar todo o projeto
-├── .env                      # Variáveis de ambiente (token + Mongo URI)
-├── requirements.txt          # Bibliotecas necessárias
-└── README.md                 # Este arquivo lindo aqui :)
+├── db/                           # Inserção e conexão com MongoDB Atlas
+│   ├── conexao.py
+│   ├── inserir_batalhas.py
+│   └── inserir_cartas.py
+│
+├── etl/                          # Scripts de ETL organizando o fluxo de dados
+│   ├── etl_battles.py
+│   ├── etl_cards.py
+│   ├── etl_controller.py
+│   └── etl_players.py
+│
+├── modelos/                      # Estruturação dos dados recebidos da API
+│   ├── modelo_batalha.py
+│   ├── modelo_carta.py
+│   └── modelo_jogador.py
+│
+├── venv/                         # Ambiente virtual Python (não subir pro GitHub)
+│
+├── .env                          # Token da API e URI do MongoDB (NÃO subir!)
+├── .gitignore                    # Arquivos ignorados no controle de versão
+├── License                       # Licença do projeto (MIT)
+├── main.py                       # Menu principal e interface CLI
+├── README.md                     # Documentação do projeto
+├── requirements.txt              # Dependências do projeto
+└── test_connection.py            # Teste simples da conexão com MongoDB
+
 ```
 
 ### 🚀 Como Rodar o Projeto
