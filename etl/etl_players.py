@@ -11,17 +11,23 @@ players_collection = db["players"]
 
 def inserir_jogadores():
     tags = [
-    "#PCJ29YJJ",
-    "#G9YV9GR8R",
-    "#JQPLJ9GRP",
-    "#290VGG28"]
+        "#PCJ29YJJ",
+        "#G9YV9GR8R",
+        "#JQPLJ9GRP",
+        "#290VGG28"
+    ]
 
-  # pode adicionar mais tags aqui
+    token = os.getenv("CLASHROYALE_TOKEN")
+    if not token:
+        print("❌ Token não encontrado no .env")
+        return
+
     headers = {
-        "Authorization": f"Bearer {os.getenv('CLASH_API_TOKEN')}"
+        "Authorization": f"Bearer {token}"
     }
 
-    players_collection.delete_many({})  # limpa antes
+    players_collection.delete_many({})
+    print("🧹 Coleção 'players' limpa.")
 
     for tag in tags:
         tag_url = tag.replace("#", "%23")
@@ -34,4 +40,8 @@ def inserir_jogadores():
             players_collection.insert_one(player)
             print(f"✅ Jogador {player['name']} inserido!")
         else:
-            print(f"❌ Erro com player {tag}: {response.status_code}")
+            print(f"❌ Erro com player {tag}: {response.status_code} - {response.text}")
+
+# Execução direta
+if __name__ == "__main__":
+    inserir_jogadores()

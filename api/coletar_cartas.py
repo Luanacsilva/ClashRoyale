@@ -1,29 +1,44 @@
-import requests
 import os
+import requests
 from dotenv import load_dotenv
 
-# Carregar token do .env
 load_dotenv()
-TOKEN = os.getenv("CLASH_API_TOKEN")
 
-# Cabeçalhos da requisição
 HEADERS = {
-    "Content-Type": "application/json",
-    "Authorization": f"Bearer {TOKEN}"
+    "Authorization": f"Bearer {os.getenv('CLASHROYALE_TOKEN')}"
 }
 
-def coletar_cartas():
-    url = "https://api.clashroyale.com/v1/cards"
-    try:
-        resposta = requests.get(url, headers=HEADERS)
-        resposta.raise_for_status()
-        cartas = resposta.json().get("items", [])
-        print(f"✅ {len(cartas)} cartas coletadas com sucesso!")
-        return cartas
-    except requests.exceptions.RequestException as erro:
-        print("🔴 Erro ao coletar cartas:", erro)
-        return []
+PLAYER_TAGS = [
+    "#PCJ29YJJ",
+    "#G9YV9GR8R",
+    "#JQPLJ9GRP",
+    "#290VGG28"
+]
 
-# Executar diretamente no terminal
+def coletar_cartas_usadas():
+    cartas_usadas = set()
+
+    for tag in PLAYER_TAGS:
+        tag_url = tag.replace("#", "%23")
+        url = f"https://api.clashroyale.com/v1/players/{tag_url}/battlelog"
+
+        response = requests.get(url, headers=HEADERS)
+
+        if response.status_code == 200:
+            batalhas = response.json()
+            print(f"✅ Batalhas para {tag}: {len(batalhas)}")
+            for batalha in batalhas:
+                team = batalha.get("team", [])
+                if team and "cards" in team[0]:
+                    for carta in team[0]["cards"]:
+                        cartas_usadas.add(carta["name"])
+        else:
+            print(f"❌ Erro {response.status_code} ao buscar batalhas para {tag}")
+
+    return list(cartas_usadas)
+
+# Teste direto
 if __name__ == "__main__":
-    coletar_cartas()
+    cartas = coletar_cartas_usadas()
+    print(f"\n🃏 Total de cartas únicas usadas: {len(cartas)}")
+    print("Exemplos:", cartas[:10])

@@ -26,7 +26,7 @@ def inserir_batalhas():
     ]
     
     headers = {
-        "Authorization": f"Bearer {os.getenv('CLASH_API_TOKEN')}"
+        "Authorization": f"Bearer {os.getenv('CLASHROYALE_TOKEN')}"
     }
 
     # Limpa a coleção antes de inserir
@@ -44,11 +44,15 @@ def inserir_batalhas():
                 batalhas = response.json()
                 count = 0
                 for batalha in batalhas:
-                    # 🧠 Filtra só batalhas com startingTrophies
                     if "startingTrophies" in batalha.get("team", [{}])[0]:
-                        batalha["playerTag"] = tag  # Adiciona referência
-                        battles_collection.insert_one(batalha)
-                        count += 1
+                        batalha["playerTag"] = tag
+                        try:
+                            battles_collection.insert_one(batalha)
+                            count += 1
+                        except DuplicateKeyError:
+                            print("⚠️ Batalha duplicada ignorada.")
+                    else:
+                        print("⚠️ Batalha ignorada (sem startingTrophies)")
                 print(f"✅ {count} batalhas inseridas do player {tag}")
             else:
                 print(f"❌ Erro {response.status_code} ao buscar batalhas do player {tag}")
@@ -58,4 +62,3 @@ def inserir_batalhas():
 # Executa se rodar diretamente
 if __name__ == "__main__":
     inserir_batalhas()
-

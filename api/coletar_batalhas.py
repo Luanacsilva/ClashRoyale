@@ -1,52 +1,41 @@
-import random
-import datetime
-from api.coletar_cartas import coletar_cartas
+import os
+import requests
+from dotenv import load_dotenv
 
-def gerar_nickname():
-    prefixos = ["Dark", "Pro", "Mega", "Fire", "Ultra", "King", "Noob", "Wizard"]
-    sufixos = ["X", "007", "BR", "Lord", "Slayer", "Master", "YT"]
-    return random.choice(prefixos) + random.choice(sufixos)
+load_dotenv()
 
-def gerar_jogador():
-    return {
-        "nickname": gerar_nickname(),
-        "trofeus": random.randint(2000, 7000),
-        "nivel": random.randint(8, 14),
-        "tempo_jogo_meses": random.randint(3, 60)
-    }
+HEADERS = {
+    "Authorization": f"Bearer {os.getenv('CLASHROYALE_TOKEN')}"
+}
 
-def gerar_deck(cartas):
-    return random.sample([c["name"] for c in cartas], 8)
+PLAYER_TAGS = [
+    "#PCJ29YJJ",
+    "#G9YV9GR8R",
+    "#JQPLJ9GRP",
+    "#290VGG28"
+]
 
-def gerar_batalha_simulada(cartas):
-    jogador_1 = gerar_jogador()
-    jogador_2 = gerar_jogador()
-    deck_1 = gerar_deck(cartas)
-    deck_2 = gerar_deck(cartas)
+def coletar_batalhas_reais():
+    batalhas = []
 
-    torres_1 = random.randint(0, 3)
-    torres_2 = random.randint(0, 3)
+    for tag in PLAYER_TAGS:
+        tag_url = tag.replace("#", "%23")
+        url = f"https://api.clashroyale.com/v1/players/{tag_url}/battlelog"
 
-    vencedor = jogador_1["nickname"] if torres_1 > torres_2 else jogador_2["nickname"]
+        response = requests.get(url, headers=HEADERS)
 
-    return {
-        "timestamp": datetime.datetime.now().isoformat(),
-        "jogador_1": jogador_1,
-        "jogador_2": jogador_2,
-        "deck_1": deck_1,
-        "deck_2": deck_2,
-        "torres_derrubadas_1": torres_1,
-        "torres_derrubadas_2": torres_2,
-        "vencedor": vencedor,
-        "duracao_segundos": random.randint(60, 360)
-    }
+        if response.status_code == 200:
+            dados = response.json()
+            print(f"✅ Batalhas coletadas para {tag}: {len(dados)}")
+            batalhas.extend(dados)
+        else:
+            print(f"❌ Erro {response.status_code} ao buscar batalhas para {tag}")
 
-def gerar_lote_batalhas(qtd=10):
-    cartas = coletar_cartas()
-    return [gerar_batalha_simulada(cartas) for _ in range(qtd)]
+    return batalhas
 
-# Teste direto
+# Teste rápido
 if __name__ == "__main__":
-    batalhas = gerar_lote_batalhas(5)
-    for b in batalhas:
-        print(f"{b['timestamp']} | Vencedor: {b['vencedor']} | Torres: {b['torres_derrubadas_1']} x {b['torres_derrubadas_2']}")
+    batalhas = coletar_batalhas_reais()
+    print(f"\n📊 Total de batalhas coletadas: {len(batalhas)}")
+    for b in batalhas[:3]:  # Mostra só as 3 primeiras pra não lotar o terminal
+        print(f"{b['type']} - {b['battleTime']} - {b['team'][0]['name']} vs {b['opponent'][0]['name']}")

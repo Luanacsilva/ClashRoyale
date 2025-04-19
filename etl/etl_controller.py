@@ -1,7 +1,6 @@
-from etl.etl_cards import inserir_cartas
-from etl.etl_players import inserir_jogadores
-from etl.etl_battles import inserir_batalhas
-
+from etl_cards import inserir_cartas
+from etl_players import inserir_jogadores
+from etl_battles import inserir_batalhas
 
 def rodar_etl():
     print("\n=== PAINEL DE CONTROLE - ETL CLASH ROYALE ===")
@@ -19,7 +18,6 @@ def rodar_etl():
     print("✅ Batalhas reais inseridas com sucesso!")
 
     print("\n✨ ETL finalizada!\n")
-
 
 if __name__ == "__main__":
     rodar_etl()
