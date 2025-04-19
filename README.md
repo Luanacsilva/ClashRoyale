@@ -72,7 +72,6 @@ ClashRoyale/
 ├── .gitignore                    # Ignora arquivos sensíveis
 ├── LICENSE                       # Licença do projeto (MIT)
 ├── app.py                        # Inicializa e executa o backend Flask
-├── main.py                       # Painel de controle via CLI
 ├── README.md                     # Documentação do projeto
 ├── requirements.txt              # Dependências
 └── test_connection.py            # Teste de conexão MongoDB e Clash API
@@ -158,20 +157,6 @@ Endpoint	                                                       Descrição
 
 ---
 
-## 🖥️ Interface Interativa via Terminal
-
-Menu ao executar `main.py`:
-
-```bash
-=== PAINEL DE CONTROLE DO CLASH ROYALE MONGO ===
-1 - Inserir cartas da API
-2 - Inserir jogadores
-3 - Inserir batalhas reais
-4 - Executar consulta analítica
-0 - Sair
-```
-
----
 
 ## ⚙️ Teste de Conexão
 
