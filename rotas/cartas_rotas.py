@@ -1,3 +1,4 @@
+
 from flask import Blueprint, request, jsonify, current_app
 from consultas.cartas_mais_usadas_derrotas import cartas_mais_usadas_em_derrotas
 from consultas.cartas_mais_usadas_em_decks_completos import cartas_mais_usadas_em_decks_completos
@@ -27,7 +28,6 @@ def rota_cartas_mais_usadas_em_decks_completos():
         return jsonify({"erro": str(e)}), 500
 
 #top players
-
 from consultas.cartas_usadas_por_top_players import cartas_usadas_por_top_players
 
 @cartas_bp.route("/cartas_usadas_por_top_players", methods=["GET"])
