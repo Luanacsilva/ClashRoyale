@@ -6,8 +6,7 @@
 ![Projeto Acadêmico](https://img.shields.io/badge/Feito_para-Faculdade-blue)
 ![Contributions](https://img.shields.io/badge/Contribui%C3%A7%C3%B5es-Bem%20vindas-brightgreen)
 ![License](https://img.shields.io/badge/License-MIT-yellow)
-![Status](https://img.shields.io/badge/Status-Em%20Desenvolvimento-orange)
-
+![Status](https://img.shields.io/badge/Status-Backend%20Finalizado-brightgreen)
 
 Este é um projeto acadêmico de banco de dados não relacional com foco em **análise estatística de batalhas do Clash Royale** utilizando a API oficial do jogo, armazenamento no **MongoDB Atlas** e execução via terminal em Python com interface interativa.
 
@@ -19,71 +18,65 @@ Este é um projeto acadêmico de banco de dados não relacional com foco em **an
 - MongoDB Atlas (cloud)
 - Pymongo
 - Dotenv
-- VSCode + Bash
+- VSCode + Git Bash
 - API oficial Clash Royale
 
 ---
 
 ## 🎯 Objetivo do Projeto
 
-Simular e analisar estatísticas de partidas Clash Royale com:
-- Armazenamento estruturado no MongoDB
-- Consultas analíticas com foco em estratégia e balanceamento
-- Relatórios de cartas, decks e vitórias com desvantagem
-- Interface de linha de comando com menu interativo
-- Arquitetura modular, limpa e escalável
+Analisar dados reais de partidas do Clash Royale com:
+- Coleta e estruturação de dados com ETL
+- Armazenamento no MongoDB Atlas
+- Consultas analíticas sobre performance de cartas, decks e jogadores
+- Interface interativa no terminal
+- Dados reais, sem simulação ou mock
 
 ---
 
-### 🧱 Estrutura de Pastas
+## 🧱 Estrutura de Pastas
 
 ```bash
 ClashRoyale/
 │
-├── api/                          # Scripts para chamada direta da API oficial
-│   ├── coletar_batalhas.py
-│   └── coletar_cartas.py
+├── api/                          # Scripts diretos de coleta
+│   ├── coletar_cartas.py
+│   └── coletar_batalhas.py
 │
-├── consultas/                    # Consultas analíticas com base nos dados reais
-│   ├── cartas_mais_usadas_derrotas.py
-│   ├── combos_derrota.py
-│   ├── combos_vencedores_n_cartas.py
-│   ├── decks_vitoriosos.py
+├── consultas/                    # Consultas analíticas (obrigatórias e extras)
 │   ├── porcentagem_carta.py
-│   ├── teste_desvantagem.py
-│   ├── teste_trofeus.py
+│   ├── decks_vitoriosos.py
+│   ├── combos_derrota.py
 │   ├── vitorias_com_desvantagem.py
-│   └── vitorias_rapidas.py
+│   ├── combos_vencedores_n_cartas.py
+│   ├── cartas_mais_usadas_derrotas.py
+│   ├── cartas_mais_usadas_em_decks_completos.py
+│   └── cartas_usadas_por_top_players.py
 │
-├── db/                           # Inserção e conexão com MongoDB Atlas
-│   ├── conexao.py
-│   ├── inserir_batalhas.py
-│   └── inserir_cartas.py
-│
-├── etl/                          # Scripts de ETL organizando o fluxo de dados
-│   ├── etl_battles.py
+├── etl/                          # Extração, transformação e carga
 │   ├── etl_cards.py
-│   ├── etl_controller.py
-│   └── etl_players.py
+│   ├── etl_players.py
+│   ├── etl_battles.py
+│   └── etl_controller.py
 │
-├── modelos/                      # Estruturação dos dados recebidos da API
+├── modelos/                      # Validação de estrutura dos dados recebidos
 │   ├── modelo_batalha.py
 │   ├── modelo_carta.py
 │   └── modelo_jogador.py
 │
-├── venv/                         # Ambiente virtual Python (não subir pro GitHub)
-│
-├── .env                          # Token da API e URI do MongoDB (NÃO subir!)
-├── .gitignore                    # Arquivos ignorados no controle de versão
-├── License                       # Licença do projeto (MIT)
-├── main.py                       # Menu principal e interface CLI
+├── .env                          # Tokens e URI Mongo (NÃO subir)
+├── .gitignore                    # Ignora arquivos sensíveis
+├── LICENSE                       # Licença do projeto (MIT)
+├── main.py                       # Painel de controle via CLI
 ├── README.md                     # Documentação do projeto
-├── requirements.txt              # Dependências do projeto
-└── test_connection.py            # Teste simples da conexão com MongoDB
-
+├── requirements.txt              # Dependências
+└── test_connection.py            # Teste de conexão MongoDB e Clash API
 ```
 
-### 🚀 Como Rodar o Projeto
+---
+
+## 🚀 Como Rodar o Projeto
+
 1. Clone o repositório
 ```bash
 git clone https://github.com/Luanacsilva/ClashRoyale.git
@@ -93,7 +86,7 @@ cd ClashRoyale
 2. Crie um ambiente virtual
 ```bash
 python -m venv venv
-source venv/Scripts/activate  # ou venv/bin/activate no Linux/macOS
+source venv/Scripts/activate  # ou venv/bin/activate
 ```
 
 3. Instale as dependências
@@ -102,87 +95,74 @@ pip install -r requirements.txt
 ```
 
 4. Configure o .env
-   Crie um arquivo .env na raiz com o seguinte conteúdo:
 ```bash
-MONGODB_URI=sua_string_de_conexao_mongo
-CLASH_API_TOKEN=seu_token_da_api
+MONGODB_URI=sua_uri_do_mongo
+CLASH_API_TOKEN=seu_token_api
 ```
----
 
-
-### 🧪 Consultas Implementadas
-✅ Requisitos obrigatórios:
-
-1. Porcentagem de vitórias usando uma carta X em um intervalo de tempo
-
-2. Decks que venceram com mais de X% de aproveitamento
-
-3. Derrotas com combo de cartas específico
-
-4. Vitórias com desvantagem em troféus, tempo e torres + carta usada
-
-5. Combos de N cartas com mais de Y% de vitórias
-
-## 💡 Consultas extras criativas:
-
-1. Cartas mais usadas em decks perdedores
-
-2. Vitórias com duração inferior a X segundos
-
-3. Cartas "carregadoras": muito usadas em vitórias, raras nas derrotas
----
-
-### 🖥️ Interface via terminal
-
-Você pode rodar o sistema com:
+5. Rode o painel principal
 ```bash
 python main.py
 ```
-E terá acesso a um menu como este:
+
+---
+
+## 🧪 Consultas Implementadas
+
+### ✅ Obrigatórias (conforme PDF da disciplina):
+
+1. Porcentagem de vitórias por carta
+2. Decks com maior taxa de vitórias
+3. Combos mais comuns em derrotas
+4. Vitórias com desvantagem (torres e troféus)
+5. Combos com N cartas com mais de Y% de vitórias
+
+### 💡 Extras criativas:
+
+6. Cartas mais usadas em derrotas
+7. Cartas mais frequentes em decks completos (8 cartas)
+8. Cartas mais comuns entre jogadores com +6000 troféus
+
+---
+
+## 🖥️ Interface Interativa via Terminal
+
+Menu ao executar `main.py`:
+
 ```bash
 === PAINEL DE CONTROLE DO CLASH ROYALE MONGO ===
 1 - Inserir cartas da API
-2 - Gerar e inserir batalhas simuladas
-3 - Executar consulta analítica
+2 - Inserir jogadores
+3 - Inserir batalhas reais
+4 - Executar consulta analítica
 0 - Sair
 ```
+
 ---
 
- ### 📈 Exemplo de Consulta (output)
+## ⚙️ Teste de Conexão
+
 ```bash
-Escolha a consulta: 1
-Digite o nome da carta: Giant
-Data de início: 10/04/25
-Data de fim: 12/04/25
-
-📊 Resultados da carta 'Giant':
-🏆 Vitórias: 14 (63.64%)
-💀 Derrotas: 8 (36.36%)
+python test_connection.py
 ```
----
-# ⚠️ Aviso
-
-## Este projeto utiliza dados públicos da API do Clash Royale. Nenhum dado privado ou pessoal foi coletado.
-## Recomenda-se o uso de um token pessoal limitado para testes.
-
+Verifica se a API e o MongoDB estão operando corretamente.
 
 ---
 
-##  🌟 Possibilidades Futuras
+## ⚠️ Aviso
 
-Visualização com Streamlit
-
-Exportação de relatórios em .csv ou .pdf
-
-Comparação de decks entre temporadas
-
-API própria com FastAPI ou Flask
+Este projeto utiliza dados **públicos** da API oficial Clash Royale. Nenhuma informação privada é acessada. Recomenda-se utilizar tokens limitados para segurança.
 
 ---
+
+## 🌟 Possibilidades Futuras
+
+- Front-end com visualização em Streamlit
+- Comparativos entre jogadores e decks por temporada
 
 ---
 
 ## 📄 Licença
 
-Este projeto está licenciado sob os termos da [Licença MIT](LICENSE).
+Distribuído sob os termos da [Licença MIT](LICENSE).
 
