@@ -8,7 +8,7 @@
 ![License](https://img.shields.io/badge/License-MIT-yellow)
 ![Status](https://img.shields.io/badge/Status-Backend%20Finalizado-brightgreen)
 
-Este é um projeto acadêmico de banco de dados não relacional com foco em **análise estatística de batalhas do Clash Royale** utilizando a API oficial do jogo, armazenamento no **MongoDB Atlas** e execução via terminal em Python com interface interativa.
+Projeto acadêmico de banco de dados não relacional com foco em **análise estatística de batalhas do Clash Royale**, utilizando a API oficial do jogo, armazenamento no **MongoDB Atlas** e execução via **Flask e terminal interativo**.
 
 ---
 
@@ -17,6 +17,7 @@ Este é um projeto acadêmico de banco de dados não relacional com foco em **an
 - Python 3.10+
 - MongoDB Atlas (cloud)
 - Pymongo
+- Flask + Flask Blueprint
 - Dotenv
 - VSCode + Git Bash
 - API oficial Clash Royale
@@ -26,10 +27,12 @@ Este é um projeto acadêmico de banco de dados não relacional com foco em **an
 ## 🎯 Objetivo do Projeto
 
 Analisar dados reais de partidas do Clash Royale com:
+
 - Coleta e estruturação de dados com ETL
 - Armazenamento no MongoDB Atlas
 - Consultas analíticas sobre performance de cartas, decks e jogadores
 - Interface interativa no terminal
+- Rotas HTTP para consumo via front-end ou navegador
 - Dados reais, sem simulação ou mock
 
 ---
@@ -60,20 +63,20 @@ ClashRoyale/
 │   └── etl_controller.py
 │
 ├── modelos/                      # Validação de estrutura dos dados recebidos
-│   ├── modelo_batalha.py
-│   ├── modelo_carta.py
-│   └── modelo_jogador.py
+│   └── modelo_*.py
+│
+├── rotas/                        # Rotas HTTP com Flask Blueprint
+│   └── cartas_rotas.py
 │
 ├── .env                          # Tokens e URI Mongo (NÃO subir)
 ├── .gitignore                    # Ignora arquivos sensíveis
 ├── LICENSE                       # Licença do projeto (MIT)
+├── app.py                        # Inicializa e executa o backend Flask
 ├── main.py                       # Painel de controle via CLI
 ├── README.md                     # Documentação do projeto
 ├── requirements.txt              # Dependências
 └── test_connection.py            # Teste de conexão MongoDB e Clash API
 ```
-
----
 
 ## 🚀 Como Rodar o Projeto
 
@@ -100,9 +103,39 @@ MONGODB_URI=sua_uri_do_mongo
 CLASH_API_TOKEN=seu_token_api
 ```
 
-5. Rode o painel principal
+5. Rode o backend Flask:
 ```bash
-python main.py
+python app.py
+```
+Acesse no navegador:
+```bash
+http://localhost:5000
+```
+#📡 Rotas HTTP (via Flask)
+Todas as consultas analíticas estão disponíveis como rotas GET retornando JSON.
+
+Exemplo de uso:
+```bash
+http://localhost:5000/porcentagem_carta?limite=5
+```
+```bash
+Endpoint	                                                       Descrição
+
+/cartas_mais_usadas_em_derrotas	                                 # Cartas mais frequentes entre derrotados
+
+/cartas_mais_usadas_em_decks_completos                           #Cartas mais frequentes em decks com 8 cartas
+
+/cartas_usadas_por_top_players	                                 #Cartas mais usadas por jogadores com 6000+ troféus
+
+/combos_derrota	                                                 #Combos de 2 cartas mais presentes em derrotas
+
+/combos_vencedores_n_cartas                                      #Combos de N cartas com X%+ de vitória
+
+/decks_vitoriosos                                               #Decks com maior taxa de vitória
+
+/porcentagem_carta	                                             #Taxa de vitórias por carta
+
+/vitorias_com_desvantagem	                                       #Batalhas vencidas com desvantagem de torres e troféus
 ```
 
 ---
