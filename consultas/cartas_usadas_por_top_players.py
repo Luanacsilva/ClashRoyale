@@ -1,43 +1,34 @@
-from pymongo import MongoClient
-from dotenv import load_dotenv
-import os
-from collections import Counter
+def cartas_usadas_por_top_players(db, limite=10):
+    """
+    Retorna as cartas mais usadas por jogadores com 6000 ou mais troféus.
+    Considera apenas decks com exatamente 8 cartas.
+    """
+    pipeline = [
+        # Filtra batalhas de jogadores com 6000+ troféus e 8 cartas
+        {"$match": {
+            "$and": [
+                {"team.0.startingTrophies": {"$gte": 6000}},
+                {"$expr": {
+                    "$eq": [
+                        {"$size": {"$arrayElemAt": ["$team.cards", 0]}},
+                        8
+                    ]
+                }}
+            ]
+        }},
+        {"$unwind": "$team"},
+        {"$unwind": "$team.cards"},
+        {"$group": {
+            "_id": "$team.cards.name",
+            "quantidade": {"$sum": 1}
+        }},
+        {"$sort": {"quantidade": -1}},
+        {"$limit": limite},
+        {"$project": {
+            "_id": 0,
+            "carta": "$_id",
+            "quantidade": 1
+        }}
+    ]
 
-# Carregar variáveis de ambiente
-load_dotenv()
-client = MongoClient(os.getenv("MONGODB_URI"))
-db = client["bd_clashroyale"]
-battles = db["battles"]
-
-def main():
-    print("\n👑 CARTAS MAIS USADAS PELOS JOGADORES TOP (6000+ TROFÉUS):\n")
-
-    filtro = {
-        "team.0.startingTrophies": {"$gte": 6000}
-    }
-
-    cursor = battles.find(filtro, {"team.cards.name": 1, "team.startingTrophies": 1})
-    cartas_counter = Counter()
-    total_decks = 0
-
-    for batalha in cursor:
-        try:
-            deck = batalha["team"][0]["cards"]
-            if len(deck) == 8:
-                nomes_cartas = [c["name"] for c in deck]
-                cartas_counter.update(nomes_cartas)
-                total_decks += 1
-        except:
-            continue
-
-    if total_decks == 0:
-        print("⚠️ Nenhum deck de jogador com 6000+ troféus foi encontrado.")
-    else:
-        print(f"🎯 Total de decks de top players analisados: {total_decks}\n")
-        for carta, qtd in cartas_counter.most_common(10):
-            print(f"🏆 {carta} - Usada em {qtd} decks")
-
-    print("\n✅ Consulta executada com sucesso!\n")
-
-if __name__ == "__main__":
-    main()
+    return list(db["battles"].aggregate(pipeline))

@@ -1,31 +1,21 @@
-from pymongo import MongoClient
-from dotenv import load_dotenv
-import os
-
-def main():
-    load_dotenv()
-    client = MongoClient(os.getenv("MONGODB_URI"))
-    db = client["bd_clashroyale"]
-    battles = db["battles"]
-
-    print("\n🏅 VITÓRIAS COM DESVANTAGEM (MENOS TROFÉUS, <2 TORRES):\n")
-
-    print("💡 O campo 'duration' não está presente nas batalhas reais fornecidas pela API oficial do Clash Royale.")
-    print("   Por isso, a verificação de tempo foi desabilitada nesta consulta.\n")
+def vitorias_com_desvantagem(db):
+    """
+    Retorna as vitórias em que o jogador tinha menos troféus e fez menos de 2 coroas,
+    mas ainda assim venceu a partida.
+    """
+    resultados = []
 
     filtro_torres = 0
     filtro_trofeus = 0
     filtro_vitoria = 0
     total_candidatas = 0
-    resultados = []
 
-    batalhas = list(battles.find())
+    batalhas = db["battles"].find()
 
     for b in batalhas:
         try:
             team = b["team"][0]
             opponent = b["opponent"][0]
-
             total_candidatas += 1
 
             if team["crowns"] >= 2:
@@ -47,23 +37,13 @@ def main():
                 "crowns_oponente": opponent["crowns"],
             })
 
-        except Exception as e:
+        except (KeyError, IndexError, TypeError):
             continue
 
-    if not resultados:
-        print("⚠️ Nenhuma vitória com desvantagem completa encontrada.\n")
-        print("🧠 Filtros que eliminaram resultados:")
-        print(f"🔺 torres_destruídas >= 2: {filtro_torres} batalhas")
-        print(f"📉 não tinha desvantagem de troféus: {filtro_trofeus} batalhas")
-        print(f"❌ não venceu a partida: {filtro_vitoria} batalhas")
-    else:
-        for r in resultados:
-            print(f"🎯 Vitória com {r['trofeus_time']} troféus contra {r['trofeus_oponente']} "
-                  f"(Coroas: {r['crowns_time']} x {r['crowns_oponente']})")
-
-    print(f"\n🔍 Total de batalhas analisadas: {total_candidatas}")
-    print("\n✅ Consulta executada com sucesso!\n")
-
-# Isso evita execução acidental se importado em outros arquivos
-if __name__ == "__main__":
-    main()
+    return {
+        "total_batalhas_analisadas": total_candidatas,
+        "removidas_por_torres_maiores_ou_iguais_a_2": filtro_torres,
+        "removidas_por_falta_de_desvantagem_de_trofeus": filtro_trofeus,
+        "removidas_por_nao_ter_vencido": filtro_vitoria,
+        "vitorias_com_desvantagem": resultados
+    }

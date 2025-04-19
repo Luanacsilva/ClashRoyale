@@ -1,68 +1,50 @@
-from pymongo import MongoClient
-from dotenv import load_dotenv
-import os
 from itertools import combinations
 from collections import Counter
 
-load_dotenv()
-client = MongoClient(os.getenv("MONGODB_URI"))
-db = client["bd_clashroyale"]
-battles = db["battles"]
+def combos_vencedores_n_cartas(db, n=3, min_taxa=70, limite=10):
+    """
+    Retorna combos de N cartas com taxa de vitória maior ou igual a `min_taxa` (%).
+    """
 
-# Configurações
-N = 3         # Número de cartas no combo
-MIN_TAXA = 70 # Taxa mínima de vitórias em %
+    # 1. Pega todas as batalhas (para contar aparições totais)
+    todas_batalhas = db["battles"].find({}, {"team.cards.name": 1})
 
-def main():
-    print("\n🎯 COMBOS DE CARTAS COM MELHOR DESEMPENHO:\n")
-
-    # Pega batalhas com vitória
-    vitorias = battles.find({
+    # 2. Pega apenas batalhas vencidas
+    vitorias = db["battles"].find({
         "$expr": {
             "$gt": [
-                { "$arrayElemAt": ["$team.crowns", 0] },
-                { "$arrayElemAt": ["$opponent.crowns", 0] }
+                {"$arrayElemAt": ["$team.crowns", 0]},
+                {"$arrayElemAt": ["$opponent.crowns", 0]}
             ]
         }
-    }, { "team.cards.name": 1 })
+    }, {"team.cards.name": 1})
 
-    # Pega todas as batalhas
-    todas = battles.find({}, { "team.cards.name": 1 })
-
-    # Função para gerar combos
-    def gerar_combos(batalhas):
-        combos = []
-        for b in batalhas:
+    def extrair_combos(cursor):
+        contagem = Counter()
+        for doc in cursor:
             try:
-                cartas = [c["name"] for c in b["team"][0]["cards"]]
-                if len(cartas) >= N:
-                    combos += combinations(sorted(cartas), N)
-            except:
-                pass
-        return combos
+                cartas = doc["team"][0]["cards"]
+                nomes = sorted([c["name"] for c in cartas])
+                if len(nomes) >= n:
+                    contagem.update(combinations(nomes, n))
+            except (KeyError, IndexError, TypeError):
+                continue
+        return contagem
 
-    # Contagem
-    total_combos = Counter(gerar_combos(todas))
-    vitoria_combos = Counter(gerar_combos(vitorias))
+    total_combos = extrair_combos(todas_batalhas)
+    vitoria_combos = extrair_combos(vitorias)
 
-    # Filtra combos com taxa alta
     resultados = []
     for combo, total in total_combos.items():
         wins = vitoria_combos.get(combo, 0)
         taxa = (wins / total) * 100
-        if taxa >= MIN_TAXA:
-            resultados.append((combo, wins, total, taxa))
+        if taxa >= min_taxa:
+            resultados.append({
+                "combo": list(combo),
+                "vitorias": wins,
+                "total": total,
+                "taxa_vitoria": round(taxa, 1)
+            })
 
-    # Ordena
-    resultados.sort(key=lambda x: x[3], reverse=True)
-
-    if not resultados:
-        print("⚠️ Nenhum combo com alta taxa de vitória encontrado.")
-    else:
-        for combo, wins, total, taxa in resultados[:10]:
-            print(f"🔗 Combo: {', '.join(combo)} - {taxa:.1f}% de vitórias ({wins} de {total})")
-
-    print("\n✅ Consulta executada com sucesso!\n")
-
-if __name__ == "__main__":
-    main()
+    resultados.sort(key=lambda x: x["taxa_vitoria"], reverse=True)
+    return resultados[:limite]

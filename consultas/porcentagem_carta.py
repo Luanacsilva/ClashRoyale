@@ -1,17 +1,12 @@
-from pymongo import MongoClient
-from dotenv import load_dotenv
-import os
-
-load_dotenv()
-
-client = MongoClient(os.getenv("MONGODB_URI"))
-db = client["bd_clashroyale"]
-battles = db["battles"]
-
-def main():
+def porcentagem_carta(db, limite=10):
+    """
+    Retorna a taxa de vitória por carta, com base em quantas vezes a carta foi usada
+    e quantas vezes resultou em vitória.
+    """
     pipeline = [
-        { "$unwind": "$team" },
-        { "$unwind": "$team.cards" },
+        {"$unwind": "$team"},
+        {"$unwind": "$opponent"},
+        {"$unwind": "$team.cards"},
         {
             "$group": {
                 "_id": "$team.cards.name",
@@ -22,7 +17,7 @@ def main():
                             {
                                 "$gt": [
                                     "$team.crowns",
-                                    { "$max": "$opponent.crowns" }
+                                    "$opponent.crowns"
                                 ]
                             },
                             1, 0
@@ -38,26 +33,18 @@ def main():
                 "total": 1,
                 "vitorias": 1,
                 "taxa_vitorias": {
-                    "$multiply": [
-                        { "$divide": ["$vitorias", "$total"] },
-                        100
+                    "$round": [
+                        { "$multiply": [
+                            { "$divide": ["$vitorias", "$total"] },
+                            100
+                        ] },
+                        1
                     ]
                 }
             }
         },
-        { "$sort": { "taxa_vitorias": -1 } }
+        { "$sort": { "taxa_vitorias": -1 } },
+        { "$limit": limite }
     ]
 
-    print("\n📊 TAXA DE VITÓRIA POR CARTA:\n")
-    resultados = list(battles.aggregate(pipeline))
-
-    if not resultados:
-        print("⚠️ Nenhum resultado encontrado.")
-    else:
-        for r in resultados:
-            print(f"{r['carta']}: {r['taxa_vitorias']:.1f}% de vitórias em {r['total']} usos")
-
-    print("\n✅ Consulta executada com sucesso!\n")
-
-if __name__ == "__main__":
-    main()
+    return list(db["battles"].aggregate(pipeline))

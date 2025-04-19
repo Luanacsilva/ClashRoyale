@@ -1,39 +1,30 @@
-from pymongo import MongoClient
-from dotenv import load_dotenv
-import os
-from collections import Counter
+def cartas_mais_usadas_em_decks_completos(db, limite=10):
+    """
+    Retorna as cartas mais frequentes em decks completos (com exatamente 8 cartas).
+    """
+    pipeline = [
+        # Seleciona batalhas onde o jogador tem exatamente 8 cartas
+        {"$match": {
+            "$expr": {
+                "$eq": [
+                    {"$size": {"$arrayElemAt": ["$team.cards", 0]}},
+                    8
+                ]
+            }
+        }},
+        {"$unwind": "$team"},
+        {"$unwind": "$team.cards"},
+        {"$group": {
+            "_id": "$team.cards.name",
+            "quantidade": {"$sum": 1}
+        }},
+        {"$sort": {"quantidade": -1}},
+        {"$limit": limite},
+        {"$project": {
+            "_id": 0,
+            "carta": "$_id",
+            "quantidade": 1
+        }}
+    ]
 
-# Carregar variáveis
-load_dotenv()
-client = MongoClient(os.getenv("MONGODB_URI"))
-db = client["bd_clashroyale"]
-battles = db["battles"]
-
-def main():
-    print("\n🃏 CARTAS MAIS FREQUENTES EM DECKS COMPLETOS (8 CARTAS):\n")
-
-    cursor = battles.find({}, {"team.cards.name": 1})
-    cartas_counter = Counter()
-    total_decks = 0
-
-    for batalha in cursor:
-        try:
-            deck = batalha["team"][0]["cards"]
-            if len(deck) == 8:
-                nomes_cartas = [c["name"] for c in deck]
-                cartas_counter.update(nomes_cartas)
-                total_decks += 1
-        except:
-            continue
-
-    if total_decks == 0:
-        print("⚠️ Nenhum deck com 8 cartas foi encontrado.")
-    else:
-        print(f"🔢 Total de decks completos analisados: {total_decks}\n")
-        for carta, qtd in cartas_counter.most_common(10):
-            print(f"📌 {carta} - Presente em {qtd} decks")
-
-    print("\n✅ Consulta executada com sucesso!\n")
-
-if __name__ == "__main__":
-    main()
+    return list(db["battles"].aggregate(pipeline))

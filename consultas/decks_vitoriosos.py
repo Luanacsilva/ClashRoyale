@@ -1,24 +1,13 @@
-from pymongo import MongoClient
-from dotenv import load_dotenv
-import os
-
-load_dotenv()
-
-client = MongoClient(os.getenv("MONGODB_URI"))
-db = client["bd_clashroyale"]
-battles = db["battles"]
-
-def main():
-    print("\n📘 DECKS COM MAIOR TAXA DE VITÓRIA:\n")
-
+def decks_vitoriosos(db, limite=10):
+    """
+    Retorna os decks com maior taxa de vitória.
+    """
     pipeline = [
         {"$unwind": "$team"},
         {"$unwind": "$opponent"},
-
         {"$addFields": {
             "team.vitoria": {"$gt": ["$team.crowns", "$opponent.crowns"]}
         }},
-
         {"$group": {
             "_id": "$team.cards.name",
             "total": {"$sum": 1},
@@ -28,33 +17,23 @@ def main():
                 }
             }
         }},
-
         {"$project": {
             "_id": 0,
             "deck": "$_id",
             "total": 1,
             "vitorias": 1,
             "taxa_vitorias": {
-                "$multiply": [
-                    {"$divide": ["$vitorias", "$total"]},
-                    100
+                "$round": [
+                    {"$multiply": [
+                        {"$divide": ["$vitorias", "$total"]},
+                        100
+                    ]},
+                    1
                 ]
             }
         }},
-
-        {"$sort": {"taxa_vitorias": -1}}
+        {"$sort": {"taxa_vitorias": -1}},
+        {"$limit": limite}
     ]
 
-    resultados = list(battles.aggregate(pipeline))
-
-    if not resultados:
-        print("⚠️ Nenhum resultado encontrado.")
-    else:
-        for r in resultados:
-            deck_nome = ", ".join(r['deck'])
-            print(f"🃏 Deck: [{deck_nome}]\n   - Vitórias: {r['vitorias']} em {r['total']} partidas ({r['taxa_vitorias']:.1f}%)\n")
-
-    print("\n✅ Consulta executada com sucesso!\n")
-
-if __name__ == "__main__":
-    main()
+    return list(db["battles"].aggregate(pipeline))
