@@ -1,14 +1,17 @@
 # 📊 Clash Royale MongoDB Analyser
 
-![Python](https://img.shields.io/badge/Python-3.10+-blue?logo=python)
-![MongoDB Atlas](https://img.shields.io/badge/MongoDB-Atlas-brightgreen?logo=mongodb)
-![Clash Royale API](https://img.shields.io/badge/API-ClashRoyale-blueviolet?logo=cloudflare)
-![Projeto Acadêmico](https://img.shields.io/badge/Feito_para-Faculdade-blue)
-![Contributions](https://img.shields.io/badge/Contribui%C3%A7%C3%B5es-Bem%20vindas-brightgreen)
-![License](https://img.shields.io/badge/License-MIT-yellow)
-![Status](https://img.shields.io/badge/Status-Backend%20Finalizado-brightgreen)
+![Made with MongoDB](https://img.shields.io/badge/DB-MongoDB-green?logo=mongodb)
+![Made with Flask](https://img.shields.io/badge/Framework-Flask-black?logo=flask)
+![Made with Streamlit](https://img.shields.io/badge/Interface-Streamlit-ff4b4b?logo=streamlit)
+![ETL Ready](https://img.shields.io/badge/ETL-Pronto-blue)
+![API Status](https://img.shields.io/badge/API%20Status-Online-brightgreen)
+![MongoDB Status](https://img.shields.io/badge/MongoDB%20Status-Conectado-brightgreen)
+![Env Protegido](https://img.shields.io/badge/.env-Seguro-important)
+![Dados Reais](https://img.shields.io/badge/Dados-Reais-blue)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-Projeto acadêmico de banco de dados não relacional com foco em **análise estatística de batalhas do Clash Royale**, utilizando a API oficial do jogo, armazenamento no **MongoDB Atlas** e execução via **Flask e terminal interativo**.
+
+Projeto acadêmico de banco de dados não relacional com foco em **análise estatística de batalhas do Clash Royale**, utilizando a API oficial do jogo, armazenamento no **MongoDB Atlas** e execução via **Flask, terminal interativo e interface com Streamlit**.
 
 ---
 
@@ -19,6 +22,7 @@ Projeto acadêmico de banco de dados não relacional com foco em **análise esta
 - Pymongo
 - Flask + Flask Blueprint
 - Dotenv
+- Streamlit
 - VSCode + Git Bash
 - API oficial Clash Royale
 
@@ -31,7 +35,7 @@ Analisar dados reais de partidas do Clash Royale com:
 - Coleta e estruturação de dados com ETL
 - Armazenamento no MongoDB Atlas
 - Consultas analíticas sobre performance de cartas, decks e jogadores
-- Interface interativa no terminal
+- Interface interativa no terminal e via Streamlit
 - Rotas HTTP para consumo via front-end ou navegador
 - Dados reais, sem simulação ou mock
 
@@ -63,7 +67,7 @@ ClashRoyale/
 │   └── etl_controller.py
 │
 ├── modelos/                      # Validação de estrutura dos dados recebidos
-│   └── modelo_*.py
+│  
 │
 ├── rotas/                        # Rotas HTTP com Flask Blueprint
 │   └── cartas_rotas.py
@@ -72,6 +76,7 @@ ClashRoyale/
 ├── .gitignore                    # Ignora arquivos sensíveis
 ├── LICENSE                       # Licença do projeto (MIT)
 ├── app.py                        # Inicializa e executa o backend Flask
+├── interface.py                  # Interface gráfica com Streamlit
 ├── README.md                     # Documentação do projeto
 ├── requirements.txt              # Dependências
 └── test_connection.py            # Teste de conexão MongoDB e Clash API
@@ -110,31 +115,44 @@ Acesse no navegador:
 ```bash
 http://localhost:5000
 ```
-#📡 Rotas HTTP (via Flask)
+
+6. (Opcional) Rode a interface gráfica com Streamlit:
+```bash
+streamlit run interface.py
+```
+Acesse no navegador:
+```bash
+http://localhost:8501
+```
+
+---
+
+# 📡 Rotas HTTP (via Flask)
 Todas as consultas analíticas estão disponíveis como rotas GET retornando JSON.
 
 Exemplo de uso:
 ```bash
 http://localhost:5000/porcentagem_carta?limite=5
 ```
+
 ```bash
-Endpoint	                                                       Descrição
+Endpoint                                                           Descrição
 
-/cartas_mais_usadas_em_derrotas	                                 # Cartas mais frequentes entre derrotados
+/cartas_mais_usadas_em_derrotas                                  Cartas mais frequentes entre derrotados
 
-/cartas_mais_usadas_em_decks_completos                           #Cartas mais frequentes em decks com 8 cartas
+/cartas_mais_usadas_em_decks_completos                           Cartas mais frequentes em decks com 8 cartas
 
-/cartas_usadas_por_top_players	                                 #Cartas mais usadas por jogadores com 6000+ troféus
+/cartas_usadas_por_top_players                                   Cartas mais usadas por jogadores com 6000+ troféus
 
-/combos_derrota	                                                 #Combos de 2 cartas mais presentes em derrotas
+/combos_derrota                                                   Combos de 2 cartas mais presentes em derrotas
 
-/combos_vencedores_n_cartas                                      #Combos de N cartas com X%+ de vitória
+/combos_vencedores_n_cartas                                      Combos de N cartas com X%+ de vitória
 
-/decks_vitoriosos                                               #Decks com maior taxa de vitória
+/decks_vitoriosos                                                 Decks com maior taxa de vitória
 
-/porcentagem_carta	                                             #Taxa de vitórias por carta
+/porcentagem_carta                                                Taxa de vitórias por carta
 
-/vitorias_com_desvantagem	                                       #Batalhas vencidas com desvantagem de torres e troféus
+/vitorias_com_desvantagem                                         Batalhas vencidas com desvantagem de torres e troféus
 ```
 
 ---
@@ -156,7 +174,6 @@ Endpoint	                                                       Descrição
 8. Cartas mais comuns entre jogadores com +6000 troféus
 
 ---
-
 
 ## ⚙️ Teste de Conexão
 
