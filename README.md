@@ -46,10 +46,6 @@ Analisar dados reais de partidas do Clash Royale com:
 ```bash
 ClashRoyale/
 │
-├── api/                          # Scripts diretos de coleta
-│   ├── coletar_cartas.py
-│   └── coletar_batalhas.py
-│
 ├── consultas/                    # Consultas analíticas (obrigatórias e extras)
 │   ├── porcentagem_carta.py
 │   ├── decks_vitoriosos.py
@@ -66,9 +62,6 @@ ClashRoyale/
 │   ├── etl_battles.py
 │   └── etl_controller.py
 │
-├── modelos/                      # Validação de estrutura dos dados recebidos
-│  
-│
 ├── rotas/                        # Rotas HTTP com Flask Blueprint
 │   └── cartas_rotas.py
 │
@@ -78,8 +71,8 @@ ClashRoyale/
 ├── app.py                        # Inicializa e executa o backend Flask
 ├── interface.py                  # Interface gráfica com Streamlit
 ├── README.md                     # Documentação do projeto
-├── requirements.txt              # Dependências
-└── test_connection.py            # Teste de conexão MongoDB e Clash API
+└── requirements.txt              # Dependências
+
 ```
 
 ## 🚀 Como Rodar o Projeto
