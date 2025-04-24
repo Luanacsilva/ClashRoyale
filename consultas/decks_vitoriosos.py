@@ -1,39 +1,105 @@
-def decks_vitoriosos(db, limite=10):
+# consultas/decks_vitoriosos.py
+from datetime import datetime, date, time
+from typing import List, Dict, Any
+from pymongo.database import Database
+
+def decks_vitoriosos(
+    db: Database,
+    percentual: float,
+    data_inicio: date | datetime,
+    data_fim: date | datetime,
+    limite: int = 10,
+) -> List[Dict[str, Any]]:
     """
-    Retorna os decks com maior taxa de vitória.
+    Lista decks completos cuja taxa de vitórias ≥ `percentual`
+    no intervalo [data_inicio, data_fim].
+    Retorna no máximo `limite` decks.
     """
     pipeline = [
-        {"$unwind": "$team"},
-        {"$unwind": "$opponent"},
-        {"$addFields": {
-            "team.vitoria": {"$gt": ["$team.crowns", "$opponent.crowns"]}
-        }},
-        {"$group": {
-            "_id": "$team.cards.name",
-            "total": {"$sum": 1},
-            "vitorias": {
-                "$sum": {
-                    "$cond": ["$team.vitoria", 1, 0]
+        # converte battleTime para datetime
+        {
+            "$addFields": {
+                "battleTimeDate": {
+                    "$dateFromString": {
+                        "dateString": "$battleTime",
+                        "format": "%Y%m%dT%H%M%S.%LZ",
+                    }
                 }
             }
-        }},
-        {"$project": {
-            "_id": 0,
-            "deck": "$_id",
-            "total": 1,
-            "vitorias": 1,
-            "taxa_vitorias": {
-                "$round": [
-                    {"$multiply": [
-                        {"$divide": ["$vitorias", "$total"]},
-                        100
-                    ]},
-                    1
-                ]
+        },
+        # filtra intervalo de datas
+        {
+            "$match": {
+                "battleTimeDate": {
+                    "$gte": datetime.combine(data_inicio, time.min),
+                    "$lte": datetime.combine(data_fim,   time.max),
+                }
             }
-        }},
-        {"$sort": {"taxa_vitorias": -1}},
-        {"$limit": limite}
+        },
+        #  marca vitória
+        {
+            "$addFields": {
+                "vitoria": {
+                    "$gt": [
+                        { "$arrayElemAt": ["$team.crowns", 0] },
+                        { "$max": "$opponent.crowns" }
+                    ]
+                }
+            }
+        },
+        #  agrupa pelo deck completo
+        {
+            "$group": {
+                "_id": "$team.cards",
+                "totalPartidas": { "$sum": 1 },
+                "totalVitorias": { "$sum": { "$cond": ["$vitoria", 1, 0] } }
+            }
+        },
+        # calcula taxa de vitórias
+        {
+            "$addFields": {
+                "taxaVitorias": {
+                    "$multiply": [
+                        { "$divide": ["$totalVitorias", "$totalPartidas"] },
+                        100
+                    ]
+                }
+            }
+        },
+        # filtra por corte mínimo
+        { "$match": { "taxaVitorias": { "$gte": percentual } } },
+        # projeta resultado final (com rounding)
+        {
+            "$project": {
+                "_id": 0,
+                "deck": "$_id",
+                "totalPartidas": 1,
+                "totalVitorias": 1,
+                "taxaVitorias": { "$round": ["$taxaVitorias", 2] }
+            }
+        },
+        # ordena e limita
+        { "$sort": { "taxaVitorias": -1 } },
+        { "$limit": limite },
     ]
 
-    return list(db["battles"].aggregate(pipeline))
+    brutos = list(db["battles"].aggregate(pipeline))
+
+    # ---- transforma cada deck em string legível ----
+    resultados: List[Dict[str, Any]] = []
+    for r in brutos:
+        nomes: List[str] = []
+        for carta in r.get("deck", []):
+            if isinstance(carta, dict) and "name" in carta:
+                nomes.append(carta["name"])
+            elif isinstance(carta, list):
+                nomes.extend([item["name"] for item in carta if isinstance(item, dict) and "name" in item])
+
+        resultados.append({
+            "deck": ", ".join(nomes[:8]) if nomes else "Desconhecido",
+            "totalPartidas": r.get("totalPartidas", 0),
+            "totalVitorias": r.get("totalVitorias", 0),
+            "taxaVitorias": r.get("taxaVitorias", 0.0),
+        })
+
+    return resultados

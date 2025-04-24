@@ -1,7 +1,5 @@
 def combos_derrota(db, limite=10):
-    """
-    Retorna os combos de 2 cartas mais frequentes em derrotas.
-    """
+
     pipeline = [
         # Filtra batalhas perdidas
         {"$match": {
@@ -19,7 +17,7 @@ def combos_derrota(db, limite=10):
         {"$match": {
             "$expr": {"$gte": [{"$size": "$cartas"}, 2]}
         }},
-        # Gera todas as combinações de 2 cartas com $reduce + $concatArrays
+        # Gera todas as combinações de cartas
         {"$project": {
             "combos": {
                 "$map": {

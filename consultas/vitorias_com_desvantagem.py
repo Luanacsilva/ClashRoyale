@@ -1,49 +1,93 @@
-def vitorias_com_desvantagem(db):
-    """
-    Retorna as vitórias em que o jogador tinha menos troféus e fez menos de 2 coroas,
-    mas ainda assim venceu a partida.
-    """
-    resultados = []
+# consultas/vitorias_com_desvantagem.py
+from pymongo.database import Database
 
-    filtro_torres = 0
-    filtro_trofeus = 0
-    filtro_vitoria = 0
-    total_candidatas = 0
+def vitorias_com_desvantagem(
+    db: Database,
+    carta: str,
+    desvantagem_minima: float,
+) -> int:
+  
+    # calcula o fator de corte
+    fator_desvantagem = 1 - (desvantagem_minima / 100)
 
-    batalhas = db["battles"].find()
+    pipeline = [
+        # filtra partidas com a carta em qualquer lado
+        {
+            "$match": {
+                "$or": [
+                    {"team.cards.name": carta},
+                    {"opponent.cards.name": carta},
+                ]
+            }
+        },
+        #  extrai troféus iniciais e quem venceu
+        {
+            "$addFields": {
+                "teamTrophies":     {"$arrayElemAt": ["$team.startingTrophies", 0]},
+                "opponentTrophies": {"$arrayElemAt": ["$opponent.startingTrophies", 0]},
+                "teamWon":          {"$gt": [
+                                        {"$arrayElemAt": ["$team.crowns", 0]},
+                                        {"$arrayElemAt": ["$opponent.crowns", 0]}
+                                    ]},
+                "opponentWon":      {"$gt": [
+                                        {"$arrayElemAt": ["$opponent.crowns", 0]},
+                                        {"$arrayElemAt": ["$team.crowns", 0]}
+                                    ]},
+            }
+        },
+        # mantém só as vitórias com desvantagem de troféus ≥ corte
+        {
+            "$match": {
+                "$or": [
+                    {
+                        "teamWon": True,
+                        "$expr": {
+                            "$lt": [
+                                "$teamTrophies",
+                                {"$multiply": ["$opponentTrophies", fator_desvantagem]}
+                            ]
+                        }
+                    },
+                    {
+                        "opponentWon": True,
+                        "$expr": {
+                            "$lt": [
+                                "$opponentTrophies",
+                                {"$multiply": ["$teamTrophies", fator_desvantagem]}
+                            ]
+                        }
+                    }
+                ]
+            }
+        },
+        # filtra vitórias sem derrubar 2 torres (0 ou 1 coroa)
+        {
+            "$match": {
+                "$or": [
+                    {
+                        "teamWon": True,
+                        "$expr": {
+                            "$lt": [
+                                {"$size": {"$ifNull": ["$opponent.princessTowersHitPoints", []]}},
+                                2
+                            ]
+                        }
+                    },
+                    {
+                        "opponentWon": True,
+                        "$expr": {
+                            "$lt": [
+                                {"$size": {"$ifNull": ["$team.princessTowersHitPoints", []]}},
+                                2
+                            ]
+                        }
+                    }
+                ]
+            }
+        },
+        # conta quantas atenderam a todos os critérios
+        {"$count": "quantidadeVitorias"},
+    ]
 
-    for b in batalhas:
-        try:
-            team = b["team"][0]
-            opponent = b["opponent"][0]
-            total_candidatas += 1
-
-            if team["crowns"] >= 2:
-                filtro_torres += 1
-                continue
-
-            if team["startingTrophies"] >= opponent["startingTrophies"]:
-                filtro_trofeus += 1
-                continue
-
-            if team["crowns"] <= opponent["crowns"]:
-                filtro_vitoria += 1
-                continue
-
-            resultados.append({
-                "trofeus_time": team["startingTrophies"],
-                "trofeus_oponente": opponent["startingTrophies"],
-                "crowns_time": team["crowns"],
-                "crowns_oponente": opponent["crowns"],
-            })
-
-        except (KeyError, IndexError, TypeError):
-            continue
-
-    return {
-        "total_batalhas_analisadas": total_candidatas,
-        "removidas_por_torres_maiores_ou_iguais_a_2": filtro_torres,
-        "removidas_por_falta_de_desvantagem_de_trofeus": filtro_trofeus,
-        "removidas_por_nao_ter_vencido": filtro_vitoria,
-        "vitorias_com_desvantagem": resultados
-    }
+    resultado = list(db["battles"].aggregate(pipeline))
+    return resultado[0].get("quantidadeVitorias", 0) if resultado else 0

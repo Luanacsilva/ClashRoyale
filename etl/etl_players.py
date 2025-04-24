@@ -1,47 +1,55 @@
+from __future__ import annotations
+from typing import List
 import requests
-import os
-from dotenv import load_dotenv
-from pymongo import MongoClient
 
-load_dotenv()
+from main import headers, players
 
-client = MongoClient(os.getenv("MONGODB_URI"))
-db = client["bd_clashroyale"]
-players_collection = db["players"]
+PLAYER_TAGS: List[str] = [
+    "#PCJ29YJJ",
+    "#G9YV9GR8R",
+    "#JQPLJ9GRP",
+    "#290VGG28",
+    "#PURLRYVJ2",
+    "#PP0VL8LC",
+    "#9GJ0Q0LGG",
+    "#R9QJRCY",
+    "#2YGQVGQ9",
+    "#202RU2GLC",
+    "#8GLURVU2"
 
-def inserir_jogadores():
-    tags = [
-        "#PCJ29YJJ",
-        "#G9YV9GR8R",
-        "#JQPLJ9GRP",
-        "#290VGG28"
-    ]
+]
 
-    token = os.getenv("CLASHROYALE_TOKEN")
-    if not token:
-        print("❌ Token não encontrado no .env")
-        return
+API_BASE = "https://api.clashroyale.com/v1/players"
 
-    headers = {
-        "Authorization": f"Bearer {token}"
-    }
 
-    players_collection.delete_many({})
-    print("🧹 Coleção 'players' limpa.")
+def _tag_to_url(tag: str) -> str:
+    """Converte tag → URL da API."""
+    return f"{API_BASE}/{tag.replace('#', '%23')}"
 
+def inserir_jogadores(tags: List[str] | None = None, *, refresh: bool = True) -> None:
+    
+    tags = tags or PLAYER_TAGS
+
+    if refresh:
+        players.delete_many({})
+        print("🧹 Collection 'players' limpa.")
+
+    ok = err = 0
     for tag in tags:
-        tag_url = tag.replace("#", "%23")
-        url = f"https://api.clashroyale.com/v1/players/{tag_url}"
+        try:
+            resp = requests.get(_tag_to_url(tag), headers=headers, timeout=15)
+            resp.raise_for_status()
+            data: dict = resp.json() 
+            data["_id"] = data.get("tag", tag)
+            players.replace_one({"_id": data["_id"]}, data, upsert=True)
+            ok += 1
+            print(f"✅ {data.get('name', tag)} inserido/atualizado.")
+        except requests.exceptions.RequestException as exc:
+            err += 1
+            print(f"❌ Falha {tag}: {exc}")
 
-        response = requests.get(url, headers=headers)
+    print(f"➜ Concluído: {ok} OK, {err} erro(s).")
 
-        if response.status_code == 200:
-            player = response.json()
-            players_collection.insert_one(player)
-            print(f"✅ Jogador {player['name']} inserido!")
-        else:
-            print(f"❌ Erro com player {tag}: {response.status_code} - {response.text}")
 
-# Execução direta
 if __name__ == "__main__":
     inserir_jogadores()

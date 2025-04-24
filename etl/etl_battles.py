@@ -1,64 +1,76 @@
-import requests 
-import os
-from dotenv import load_dotenv
-from pymongo import MongoClient
-from pymongo.errors import ConnectionFailure, DuplicateKeyError
+from __future__ import annotations
+from datetime import datetime
+from typing import Iterable, List
 
-# Carrega variáveis de ambiente
-load_dotenv()
+import requests
+from main import battles, headers
 
-# Conecta ao MongoDB
 try:
-    client = MongoClient(os.getenv("MONGODB_URI"))
-    db = client["bd_clashroyale"]
-    battles_collection = db["battles"]
-    print("💚 Conexão com MongoDB estabelecida com sucesso!")
-except ConnectionFailure as e:
-    print(f"❌ Erro de conexão com o MongoDB: {e}")
-    exit()
-
-def inserir_batalhas():
-    tags = [
+    # Reaproveita a lista definida no ETL de players
+    from etl.etl_players import PLAYER_TAGS as _DEFAULT_TAGS 
+    PLAYER_TAGS: List[str] = list(_DEFAULT_TAGS)
+except Exception:
+    PLAYER_TAGS = [
         "#PCJ29YJJ",
         "#G9YV9GR8R",
         "#JQPLJ9GRP",
-        "#290VGG28"
+        "#290VGG28",
+        "#PURLRYVJ2",
+        "#PP0VL8LC",
+        "#9GJ0Q0LGG",
+        "#R9QJRCY",
+        "#2YGQVGQ9",
+        "#202RU2GLC",
+        "#8GLURVU2",
     ]
-    
-    headers = {
-        "Authorization": f"Bearer {os.getenv('CLASHROYALE_TOKEN')}"
-    }
 
-    # Limpa a coleção antes de inserir
-    battles_collection.delete_many({})
-    print("🧹 Coleção 'battles' limpa.")
+API_BASE = "https://api.clashroyale.com/v1/players"
+TIMEOUT = 15  
 
-    for tag in tags:
-        tag_url = tag.replace("#", "%23")
-        url = f"https://api.clashroyale.com/v1/players/{tag_url}/battlelog"
 
-        try:
-            response = requests.get(url, headers=headers)
+def _tag_to_url(tag: str) -> str:
+    return f"{API_BASE}/{tag.replace('#', '%23')}/battlelog"
 
-            if response.status_code == 200:
-                batalhas = response.json()
-                count = 0
-                for batalha in batalhas:
-                    if "startingTrophies" in batalha.get("team", [{}])[0]:
-                        batalha["playerTag"] = tag
-                        try:
-                            battles_collection.insert_one(batalha)
-                            count += 1
-                        except DuplicateKeyError:
-                            print("⚠️ Batalha duplicada ignorada.")
-                    else:
-                        print("⚠️ Batalha ignorada (sem startingTrophies)")
-                print(f"✅ {count} batalhas inseridas do player {tag}")
-            else:
-                print(f"❌ Erro {response.status_code} ao buscar batalhas do player {tag}")
-        except Exception as e:
-            print(f"🔥 Erro durante a requisição ou inserção: {e}")
 
-# Executa se rodar diretamente
+def _fetch(url: str) -> list[dict]:
+    try:
+        resp = requests.get(url, headers=headers, timeout=TIMEOUT)
+        resp.raise_for_status()
+        return resp.json()  
+    except requests.exceptions.RequestException as exc:
+        print(f"❌ {url}: {exc}")
+        return []
+
+
+def _flatten(it: Iterable[list[dict]]) -> list[dict]:
+    return [b for sub in it for b in sub]
+
+
+def inserir_batalhas(tags: List[str] | None = None, *, refresh: bool = False) -> None:
+   
+    tags = tags or PLAYER_TAGS
+
+    if refresh:
+        battles.delete_many({})
+        print("🧹 Collection 'battles' limpa.")
+
+    urls = [_tag_to_url(t) for t in tags]
+    docs = _flatten(_fetch(u) for u in urls)
+    if not docs:
+        print("⚠️ Nenhum dado obtido.")
+        return
+
+    for d in docs:
+        tag = d.get("team", [{}])[0].get("tag") or d.get("playerTag")
+        bt = d.get("battleTime")
+        if not tag or not bt:
+            continue
+        _id = f"{tag}_{bt}"
+        d.update({"_id": _id, "importedAt": datetime.utcnow()})
+        battles.replace_one({"_id": _id}, d, upsert=True)
+
+    print(f"✅ Collection 'battles' → {battles.count_documents({})} documentos.")
+
+
 if __name__ == "__main__":
-    inserir_batalhas()
+    inserir_batalhas(refresh=True)
