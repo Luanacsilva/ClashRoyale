@@ -57,10 +57,10 @@ ClashRoyale/
 │   └── cartas_usadas_por_top_players.py
 │
 ├── etl/                          # Extração, transformação e carga
-│   ├── etl_cards.py
+│  
 │   ├── etl_players.py
 │   ├── etl_battles.py
-│   └── etl_controller.py
+│   
 │
 ├── rotas/                        # Rotas HTTP com Flask Blueprint
 │   └── cartas_rotas.py
@@ -100,16 +100,7 @@ MONGODB_URI=sua_uri_do_mongo
 CLASH_API_TOKEN=seu_token_api
 ```
 
-5. Rode o backend Flask:
-```bash
-python app.py
-```
-Acesse no navegador:
-```bash
-http://localhost:5000
-```
-
-6. (Opcional) Rode a interface gráfica com Streamlit:
+5. (Opcional) Rode a interface gráfica com Streamlit:
 ```bash
 streamlit run interface.py
 ```
@@ -165,15 +156,6 @@ Endpoint                                                           Descrição
 6. Cartas mais usadas em derrotas
 7. Cartas mais frequentes em decks completos (8 cartas)
 8. Cartas mais comuns entre jogadores com +6000 troféus
-
----
-
-## ⚙️ Teste de Conexão
-
-```bash
-python test_connection.py
-```
-Verifica se a API e o MongoDB estão operando corretamente.
 
 ---
 
